@@ -7,6 +7,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Optional;
 import java.util.function.Consumer;
@@ -59,6 +60,7 @@ public class Main extends Application {
                 temp.add(s);
             }
         });
+        Collections.sort(temp);
         words = FXCollections.observableArrayList(temp);
         primaryStage.setTitle("Dictionnaire des anglicismes");
         listView.setItems(words);
@@ -109,34 +111,6 @@ public class Main extends Application {
                 words.remove(word);
             }
         });
-        // Textarea inputs
-        /*TextField updateTitle = (TextField) scene.getRoot().lookup("#updateTitle");
-        TextField updateDefinition = (TextField) scene.getRoot().lookup("#updateDefinition");
-        updateTitle.setOnKeyPressed(new EventHandler<KeyEvent>() {
-            @Override
-            public void handle(KeyEvent event) {
-                if (event.getCode() == KeyCode.ENTER) {
-                    String oldValue = titleLabel.getText();
-                    data.put(updateTitle.getText(), data.remove(oldValue));
-                    words.remove(oldValue);
-                    words.add(updateTitle.getText());
-                    updateTitle.clear();
-                }
-            }
-        });
-        updateDefinition.setOnKeyPressed(new EventHandler<KeyEvent>() {
-            @Override
-            public void handle(KeyEvent event) {
-                if (event.getCode() == KeyCode.ENTER) {
-                    String key = listView.getSelectionModel().getSelectedItem();
-                    System.out.println("Key " + key);
-                    String newDefinition = updateDefinition.getText();
-                    data.put(key, newDefinition);
-                    definition.setText(newDefinition);
-                    updateDefinition.clear();
-                }
-            }
-        });*/
     }
 
     private void setupMenu(Scene scene, Stage primaryStage) {
@@ -149,7 +123,6 @@ public class Main extends Application {
         newWord.setOnAction(new EventHandler<ActionEvent>() {
             @Override
             public void handle(ActionEvent event) {
-                //addNewWord();
                 showAddNewWordDialog("","");
             }
         });
@@ -179,30 +152,44 @@ public class Main extends Application {
     ButtonType loginButtonType = new ButtonType("OK", ButtonData.OK_DONE);
     dialog.getDialogPane().getButtonTypes().addAll(loginButtonType, ButtonType.CANCEL);
 
-    VBox vbox = new VBox();
-    vbox.setPrefSize(300, 200);
+    GridPane gridPane = new GridPane();
+    gridPane.setPrefSize(300, 200);
 
-    TextField from = new TextField();
-    from.setPromptText("From");
-    from.setText(word);
-    TextField to = new TextField();
-    to.setText(def);
-    to.setPromptText("To");
+    Label motLabel = new Label("Mot");
+    TextField motTextField = new TextField();
+    motTextField.setPromptText("Mot");
+    motTextField.setText(word);
+    
+    Label defLabel = new Label("Définition");
+    TextField defTextField = new TextField();
+    defTextField.setText(def);
+    defTextField.setPromptText("Définition");
 
-    vbox.getChildren().addAll(from, to);
-    dialog.getDialogPane().setContent(vbox);
+    gridPane.add(motLabel, 0, 0);
+    gridPane.add(motTextField, 1, 0);
+    gridPane.add(defLabel, 0, 1);
+    gridPane.add(defTextField, 1, 1);
+    dialog.getDialogPane().setContent(gridPane);
 
-    // Request focus on the username field by default.
-    Platform.runLater(() -> from.requestFocus());
+    // Request focus on the word field field by default.
+    Platform.runLater(() -> motTextField.requestFocus());
 
-    // Convert the result to a username-password-pair when the login button is clicked.
     dialog.setResultConverter(dialogButton -> {
         if (dialogButton == loginButtonType) {
-            addNewWord(from.getText(), to.getText());
+            addNewWord(motTextField.getText(), defTextField.getText());
             return dialogButton;
         }
         return null;
     });
+    
+    final Button btOk = (Button) dialog.getDialogPane().lookupButton(loginButtonType);
+ btOk.addEventFilter(ActionEvent.ACTION, event -> {
+     if (motTextField.getText().isEmpty()) {
+         Alert alert = new Alert(Alert.AlertType.ERROR, "Vous devez rentrez un mot");
+         alert.showAndWait();
+         event.consume();
+     }
+ });
 
     dialog.showAndWait();
 
