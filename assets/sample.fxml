@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import java.lang.*?>
+<?import java.util.*?>
+<?import javafx.scene.*?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+
+<HBox xmlns="http://javafx.com/javafx"
+            xmlns:fx="http://javafx.com/fxml"
+            fx:controller="sample.Controller"
+            prefHeight="400.0" prefWidth="600.0">
+    <ListView fx:id="listView"></ListView>
+    <VBox>
+        <Label fx:id="label" text="test"></Label>
+        <Label text="test2"></Label>
+        <Label text="test3"></Label>
+    </VBox>
+
+</HBox>

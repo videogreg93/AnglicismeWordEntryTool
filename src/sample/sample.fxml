@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import java.lang.*?>
+<?import java.util.*?>
+<?import javafx.scene.*?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+
+<BorderPane xmlns="http://javafx.com/javafx"
+            xmlns:fx="http://javafx.com/fxml"
+            fx:controller="sample.Controller"
+            prefHeight="400" prefWidth="600">
+    <left>
+        <ListView fx:id="listView" prefWidth="125"></ListView>
+    </left>
+    <center>
+        <HBox prefWidth="600">
+            <VBox prefWidth="600">
+                <Label fx:id="label" text="test" alignment="CENTER" prefWidth="600" textAlignment="CENTER"></Label>
+                <TextField fx:id="updateTitle"></TextField>
+                <Label fx:id="definition" text="test2"></Label>
+                <TextField fx:id="updateDefinition"></TextField>
+
+            </VBox>
+        </HBox>
+    </center>
+
+
+
+</BorderPane>
