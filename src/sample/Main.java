@@ -4,6 +4,8 @@ package sample;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.io.PrintWriter;
+import java.io.StringWriter;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.ArrayList;
@@ -11,6 +13,8 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.Optional;
 import java.util.function.Consumer;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import javafx.application.Application;
 import javafx.application.Platform;
 import javafx.beans.value.ChangeListener;
@@ -24,6 +28,7 @@ import javafx.geometry.Insets;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.scene.control.*;
+import javafx.scene.control.Alert.AlertType;
 import javafx.scene.control.ButtonBar.ButtonData;
 import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyEvent;
@@ -31,10 +36,13 @@ import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.GridPane;
 import javafx.scene.layout.HBox;
+import javafx.scene.layout.Priority;
 import javafx.scene.layout.VBox;
 import javafx.scene.text.Font;
 import javafx.stage.Stage;
+import javafx.stage.WindowEvent;
 import javafx.util.Pair;
+import org.controlsfx.control.Notifications;
 import org.json.JSONException;
 import org.json.JSONObject;
 
@@ -92,11 +100,34 @@ public class Main extends Application {
         });
 
 
-        Scene scene = new Scene(root, 600, 800);
+        Scene scene = new Scene(root, 600, 500);
         setupInputHandling(scene);
         setupMenu(scene ,primaryStage);
         primaryStage.setScene(scene);
         primaryStage.show();
+        
+        primaryStage.setOnCloseRequest(new EventHandler<WindowEvent>() {
+
+            @Override
+            public void handle(WindowEvent event) {
+                Alert alert = new Alert(AlertType.CONFIRMATION);
+                alert.setTitle("Quitting");
+                alert.setHeaderText("You are about to quit");
+                alert.setContentText("Would you like to save first?");
+
+                alert.getButtonTypes().setAll(ButtonType.YES, ButtonType.NO, ButtonType.CANCEL);
+
+                Optional<ButtonType> result = alert.showAndWait();
+                if (result.get() == ButtonType.YES){
+                    try {
+                        saveWork();
+                    } catch (Exception ex) {
+                        showExceptionDialog(ex);
+                    }
+                } if (result.get() == ButtonType.CANCEL )
+                    event.consume();
+                }
+        });
         
         
          
@@ -126,8 +157,23 @@ public class Main extends Application {
                 showAddNewWordDialog("","");
             }
         });
+        
+        MenuItem save = new MenuItem("Save");
+        save.setOnAction(new EventHandler<ActionEvent>() {
+            @Override
+            public void handle(ActionEvent event) {
+               try {
+                    saveWork();
+                    Notifications.create()
+              .title("Save")
+              .text("File successfuly saved!").showInformation();
+                } catch (Exception ex) {
+                    showExceptionDialog(ex);
+                }
+            }
+        });
 
-        menuFile.getItems().addAll(newWord);
+        menuFile.getItems().addAll(newWord, save);
 
         // --- Menu Edit
         Menu menuEdit = new Menu("Edit");
@@ -241,7 +287,19 @@ public class Main extends Application {
     }
 
     @Override
-    public void stop() throws Exception {
+    public void stop()  {
+        
+        /*if (showConfirmationToQuitDialog()) {
+            try {
+                saveWork();
+            } catch (Exception ex) {
+                showExceptionDialog(ex);
+            }
+        } */ 
+    }
+        
+
+    private void saveWork() throws Exception {
         FileWriter fileWriter = new FileWriter("sampleData.json");
         try {
 
@@ -254,6 +312,57 @@ public class Main extends Application {
         } finally {
             fileWriter.flush();
             fileWriter.close();
+        }
+    }
+    
+    public void showExceptionDialog(Exception ex) {
+        Alert alert = new Alert(AlertType.ERROR);
+        alert.setTitle("Exception Dialog");
+        alert.setHeaderText("Look, an Exception Dialog");
+        alert.setContentText(ex.getMessage());
+
+
+        // Create expandable Exception.
+        StringWriter sw = new StringWriter();
+        PrintWriter pw = new PrintWriter(sw);
+        ex.printStackTrace(pw);
+        String exceptionText = sw.toString();
+
+        Label label = new Label("The exception stacktrace was:");
+
+        TextArea textArea = new TextArea(exceptionText);
+        textArea.setEditable(false);
+        textArea.setWrapText(true);
+
+        textArea.setMaxWidth(Double.MAX_VALUE);
+        textArea.setMaxHeight(Double.MAX_VALUE);
+        GridPane.setVgrow(textArea, Priority.ALWAYS);
+        GridPane.setHgrow(textArea, Priority.ALWAYS);
+
+        GridPane expContent = new GridPane();
+        expContent.setMaxWidth(Double.MAX_VALUE);
+        expContent.add(label, 0, 0);
+        expContent.add(textArea, 0, 1);
+
+        // Set expandable Exception into the dialog pane.
+        alert.getDialogPane().setExpandableContent(expContent);
+
+        alert.showAndWait();
+    }
+
+    private boolean showConfirmationToQuitDialog() {
+        Alert alert = new Alert(AlertType.CONFIRMATION);
+        alert.setTitle("Quitting");
+        alert.setHeaderText("You are about to quit");
+        alert.setContentText("Would you like to save first?");
+        
+        alert.getButtonTypes().setAll(ButtonType.YES, ButtonType.NO, ButtonType.CANCEL);
+
+        Optional<ButtonType> result = alert.showAndWait();
+        if (result.get() == ButtonType.OK){
+            return true;
+        } else {
+            return false;
         }
     }
 }
