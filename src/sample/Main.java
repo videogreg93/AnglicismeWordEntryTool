@@ -15,6 +15,7 @@ import java.util.Optional;
 import java.util.function.Consumer;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import java.util.prefs.Preferences;
 import javafx.application.Application;
 import javafx.application.Platform;
 import javafx.beans.value.ChangeListener;
@@ -39,6 +40,7 @@ import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.VBox;
 import javafx.scene.text.Font;
+import javafx.stage.FileChooser;
 import javafx.stage.Stage;
 import javafx.stage.WindowEvent;
 import javafx.util.Pair;
@@ -55,27 +57,26 @@ public class Main extends Application {
     Label titleLabel;
 
     ObservableList<String> words;
+    
+    FileChooser fileChooser = new FileChooser();
+    File file;
+    String path;
+    
+    Preferences prefs;
 
     @Override
     public void start(Stage primaryStage) throws Exception{
-        loadJson();
+        prefs = Preferences.userNodeForPackage(Main.class);
+        String filePath = prefs.get("filePath", "sampleData.json");
+        loadJson(filePath);
+        
+                
         root = FXMLLoader.load(getClass().getResource("sample.fxml"));
         listView = (javafx.scene.control.ListView<String>) root.lookup("#listView");
-        ArrayList<String> temp = new ArrayList<>();
-        data.keys().forEachRemaining(new Consumer<String>() {
-            @Override
-            public void accept(String s) {
-                temp.add(s);
-            }
-        });
-        Collections.sort(temp);
-        words = FXCollections.observableArrayList(temp);
-        primaryStage.setTitle("Dictionnaire des anglicismes");
-        listView.setItems(words);
         titleLabel = (Label) root.lookup("#label");
-        definition = (Label) root.lookup("#definition");
         titleLabel.setFont(new Font(titleLabel.getFont().getFamily(),30));
-
+        definition = (Label) root.lookup("#definition");
+        addWordsToList();
 
         listView.getSelectionModel().selectedItemProperty().addListener(
                 new ChangeListener<String>() {
@@ -86,17 +87,15 @@ public class Main extends Application {
                     }
                 });
         
-        listView.setOnMouseClicked(new EventHandler<MouseEvent>() {
-            
-    @Override
-    public void handle(MouseEvent click) {
-
-        if (click.getClickCount() == 2) {
-           String word = listView.getSelectionModel().getSelectedItem();
-           String def = data.getString(word);
-            showAddNewWordDialog(word, def);
-        }
-    }
+        listView.setOnMouseClicked(new EventHandler<MouseEvent>() {         
+            @Override
+            public void handle(MouseEvent click) {
+                if (click.getClickCount() == 2) {
+                   String word = listView.getSelectionModel().getSelectedItem();
+                   String def = data.getString(word);
+                    showAddNewWordDialog(word, def);
+                }
+            }
         });
 
 
@@ -104,7 +103,14 @@ public class Main extends Application {
         setupInputHandling(scene);
         setupMenu(scene ,primaryStage);
         primaryStage.setScene(scene);
+        primaryStage.setTitle("Dictionnaire des anglicismes");
         primaryStage.show();
+        
+        Notifications.create()
+              .title("Load")
+              .text("Loaded " + filePath).showInformation();
+        
+        
         
         primaryStage.setOnCloseRequest(new EventHandler<WindowEvent>() {
 
@@ -140,6 +146,9 @@ public class Main extends Application {
                 String word = listView.getSelectionModel().getSelectedItem();
                 data.remove(word);
                 words.remove(word);
+                Notifications.create()
+              .title("Delete")
+              .text("Deleted " + word).showInformation();
             }
         });
     }
@@ -172,8 +181,22 @@ public class Main extends Application {
                 }
             }
         });
+        
+        MenuItem open = new MenuItem("Open");
+        open.setOnAction(new EventHandler<ActionEvent>() {
+            @Override
+            public void handle(ActionEvent event) {
+                file = fileChooser.showOpenDialog(primaryStage);
+                try {
+                    loadJson(file);
+                    addWordsToList();
+                } catch (IOException ex) {
+                    showExceptionDialog(ex);
+                }
+            }
+        });
 
-        menuFile.getItems().addAll(newWord, save);
+        menuFile.getItems().addAll(newWord, open, save);
 
         // --- Menu Edit
         Menu menuEdit = new Menu("Edit");
@@ -269,12 +292,26 @@ public class Main extends Application {
 
     }
 
-    public void loadJson() throws IOException {
-        data = parseJSONFile("sampleData.json");
+    public void loadJson(String filePath) throws IOException {
+        data = parseJSONFile(filePath);
+        path = filePath;
     }
+    
+    public void loadJson(File file) throws IOException {
+        data = parseJSONFile(file);
+        path = file.getPath();
+    }
+    
+   
 
-    public static JSONObject parseJSONFile(String filename) throws JSONException, IOException {
+    public JSONObject parseJSONFile(String filename) throws JSONException, IOException {
+        
         String content = new String(Files.readAllBytes(Paths.get(filename)));
+        return new JSONObject(content);
+    }
+    
+    public JSONObject parseJSONFile(File file) throws JSONException, IOException {
+        String content = new String(Files.readAllBytes(file.toPath()));
         return new JSONObject(content);
     }
 
@@ -289,18 +326,12 @@ public class Main extends Application {
     @Override
     public void stop()  {
         
-        /*if (showConfirmationToQuitDialog()) {
-            try {
-                saveWork();
-            } catch (Exception ex) {
-                showExceptionDialog(ex);
-            }
-        } */ 
+        prefs.put("filePath", path);
     }
         
 
     private void saveWork() throws Exception {
-        FileWriter fileWriter = new FileWriter("sampleData.json");
+        FileWriter fileWriter = new FileWriter(path);
         try {
 
             fileWriter.write(data.toString());
@@ -364,5 +395,19 @@ public class Main extends Application {
         } else {
             return false;
         }
+    }
+
+    private void addWordsToList() {
+        ArrayList<String> temp = new ArrayList<>();
+        data.keys().forEachRemaining(new Consumer<String>() {
+            @Override
+            public void accept(String s) {
+                temp.add(s);
+            }
+        });
+        Collections.sort(temp);
+        words = FXCollections.observableArrayList(temp);
+        listView.setItems(words);
+        listView.getSelectionModel().select(0);
     }
 }
