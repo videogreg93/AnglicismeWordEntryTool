@@ -68,15 +68,23 @@ public class Main extends Application {
     public void start(Stage primaryStage) throws Exception{
         prefs = Preferences.userNodeForPackage(Main.class);
         String filePath = prefs.get("filePath", "sampleData.json");
-        loadJson(filePath);
-        
-                
         root = FXMLLoader.load(getClass().getResource("sample.fxml"));
         listView = (javafx.scene.control.ListView<String>) root.lookup("#listView");
         titleLabel = (Label) root.lookup("#label");
         titleLabel.setFont(new Font(titleLabel.getFont().getFamily(),30));
         definition = (Label) root.lookup("#definition");
+        
+        try {
+        loadJson(filePath);
         addWordsToList();
+        } catch(Exception e) {
+            showExceptionDialog(e);
+        }
+         
+        
+                
+
+        
 
         listView.getSelectionModel().selectedItemProperty().addListener(
                 new ChangeListener<String>() {
